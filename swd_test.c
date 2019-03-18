@@ -1,7 +1,6 @@
 #include<avr/io.h>
 #include<util/delay.h>
 
-
 /*----------------------------------------------------------------------------*/
 //	Defination
 /*----------------------------------------------------------------------------*/
@@ -14,7 +13,6 @@
 uint8_t on_time = 10;
 uint8_t off_time = 10;
 
-
 void gpio_init()
 {
 	//Port B pin 3 as output swd_clk arduino pin 11
@@ -25,7 +23,6 @@ void gpio_init()
 
 	PORTB &= ~(1<<PB5);
 }
-
 void SW_CLK(uint8_t count)
 {
 	uint8_t i;
@@ -38,29 +35,24 @@ void SW_CLK(uint8_t count)
 		_delay_us(1);
 	}
 }
-
 void SWDIO_SET()
 {
 	PORTB |= (1<<PB4);
 }
-
 void SWDIO_RESET()
 {
 	PORTB &= ~(1<<PB4);
 }
-
 void SWDIO_SET_IN()
 {
 	DDRB &= ~(1<<PB4);		// Set Input
 	PORTB &= ~(1<<PB4);		// Set Logic 0
 }
-
 void SWDIO_SET_OUT()
 {
 	DDRB |= (1<<PB4);
 	PORTB &= ~(1<<PB4);
 }
-
 void SW_WRITE_BIT(_Bool bit)
 {
 	SWDIO_SET_OUT();
@@ -74,7 +66,6 @@ void SW_WRITE_BIT(_Bool bit)
 	}
 	SW_CLK(1);
 }
-
 uint8_t SW_READ_BIT()
 {
 	uint8_t bit = 0;
@@ -83,13 +74,11 @@ uint8_t SW_READ_BIT()
 	SW_CLK(1);
 	return bit;
 }
-
 void SW_TURNAROUND()
 {
 	SWDIO_SET_IN();
 	SW_CLK(1);
 }
-
 uint8_t SW_WRITE_BYTE(uint8_t request)
 {
 //	uint8_t bit;
