@@ -1,11 +1,10 @@
 #include<avr/io.h>
 #include<util/delay.h>
-
 /*----------------------------------------------------------------------------*/
 //	Defination
 /*----------------------------------------------------------------------------*/
 #define REQ_ID_CODE 0xA5
-#define ACK_OK 4
+#define ACK_OK 1
 /*----------------------------------------------------------------------------*/
 //	Defination
 /*----------------------------------------------------------------------------*/
@@ -28,10 +27,9 @@ void SW_CLK(uint8_t count)
 	uint8_t i;
 	for(i = 0; i<count; i+=1)
 	{
-		_delay_us(2);
-		PORTB |= (1<<PB3);
-		_delay_us(1);
 		PORTB &= ~(1<<PB3);
+		_delay_us(1);
+		PORTB |= (1<<PB3);
 		_delay_us(1);
 	}
 }
@@ -51,19 +49,12 @@ void SWDIO_SET_IN()
 void SWDIO_SET_OUT()
 {
 	DDRB |= (1<<PB4);
-	PORTB &= ~(1<<PB4);
 }
-void SW_WRITE_BIT(_Bool bit)
+void SW_WRITE_BIT(uint8_t bit)
 {
 	SWDIO_SET_OUT();
-	if(bit)
-	{
-		SWDIO_SET();
-	}
-	else
-	{
-		SWDIO_RESET();
-	}
+	if(bit) SWDIO_SET();
+	else SWDIO_RESET();
 	SW_CLK(1);
 }
 uint8_t SW_READ_BIT()
@@ -79,49 +70,43 @@ void SW_TURNAROUND()
 	SWDIO_SET_IN();
 	SW_CLK(1);
 }
-uint8_t SW_WRITE_BYTE(uint8_t request)
+uint8_t SW_REQUEST(uint8_t request)
 {
-//	uint8_t bit;
-	uint8_t parity = 0;
-	parity = request;
-	if(parity)
-	{
-			parity=0;
-	}
+	uint8_t bit;
+//	uint8_t parity = 0;
+
 //	SW_WRITE_BIT(1);		// Start Bit
-//	bit = request >> 0;
+//	bit = (request >> 0) & 1;
 //	SW_WRITE_BIT(bit);		// APnDP Bit
 //	parity += bit;
-//	bit = request >> 1;		// RnW Bit
+//	bit = (request >> 1) & 1;		// RnW Bit
 //	SW_WRITE_BIT(bit);
 //	parity += bit;
-//	bit = request >> 2;
+//	bit = (request >> 2) & 1;
 //	SW_WRITE_BIT(bit);		//A2 Bit
 //	parity += bit;
-//	bit = request >> 3;
+//	bit = (request >> 3) & 1;
 //	SW_WRITE_BIT(bit);		//A3 Bit
 //	parity += bit;
 //	SW_WRITE_BIT(parity);	// Parity Bit
 //	SW_WRITE_BIT(0);		// Stop Bit
 //	SW_WRITE_BIT(1);		// Park Bit
 
-	SW_WRITE_BIT(1);
-	SW_WRITE_BIT(0);
-	SW_WRITE_BIT(1);
-	SW_WRITE_BIT(0);
-	SW_WRITE_BIT(0);
-	SW_WRITE_BIT(1);
-	SW_WRITE_BIT(0);
-	SW_WRITE_BIT(1);
+	for(uint8_t i = 0; i<8; i++)
+	{
+		bit = (request >> i) & 1;
+		SW_WRITE_BIT(bit);
+	}
+
 	SW_TURNAROUND();
 
-	uint8_t ack = 4;
-//	bit = 0;
-//	for(uint8_t i=0; i<=3; i++)
-//	{
-//		bit = SW_READ_BIT();
-//		ack = bit << i;
-//	}
+	uint8_t ack = 0;
+	bit = 0;
+	for(uint8_t i=0; i<3; i++)
+	{
+		bit = SW_READ_BIT();
+		ack += (bit << i);
+	}
 	return ack;
 }
 
@@ -139,8 +124,8 @@ void SW_LINE_RESET()
 	SW_WRITE_BIT(0);
 	SW_WRITE_BIT(1);
 	SW_CLK(56);
-	SW_WRITE_BIT(1);
-	_delay_us(2);
+	SW_WRITE_BIT(0);
+	SW_WRITE_BIT(0);
 }
 uint32_t SW_READ_DATA()
 {
@@ -164,21 +149,32 @@ int main()
 //	Initialize System
 /*----------------------------------------------------------------------------*/
 	gpio_init();
+	USART_Init();
 /*----------------------------------------------------------------------------*/
 //	LINE RESET
 /*----------------------------------------------------------------------------*/
 	SW_LINE_RESET();
-	_delay_us(2);
-
 /*----------------------------------------------------------------------------*/
 //	Request Acces DP Read IDCODE
 /*----------------------------------------------------------------------------*/
-	_ack = SW_WRITE_BYTE(REQ_ID_CODE);
-	SW_CLK(32);
+	_ack = SW_REQUEST(REQ_ID_CODE);
+//	SW_WRITE_BIT(1);
+//	SW_WRITE_BIT(0);
+//	SW_WRITE_BIT(1);
+//	SW_WRITE_BIT(0);
+//	SW_WRITE_BIT(0);
+//	SW_WRITE_BIT(1);
+//	SW_WRITE_BIT(0);
+//	SW_WRITE_BIT(1);
+//
+//	DDRB &= ~(1<<PB4);		// Set Input
+//	PORTB &= ~(1<<PB4);		// Set Logic 0
+	SW_CLK(35);
 /*----------------------------------------------------------------------------*/
 //	SWD_IO pin tristate and Turnaround
 /*----------------------------------------------------------------------------*/
-	if (_ack == 4) PORTB |= (1<<PB5);
+	USART_SendByte(_ack);
+	if (_ack == ACK_OK) PORTB |= (1<<PB5);
 	else PORTB &= ~(1<<PB5);
 
 	return 0;
