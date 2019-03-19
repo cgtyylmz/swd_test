@@ -22,6 +22,7 @@ void gpio_init()
 
 	PORTB &= ~(1<<PB5);
 }
+
 void SW_CLK(uint8_t count)
 {
 	uint8_t i;
@@ -33,11 +34,19 @@ void SW_CLK(uint8_t count)
 		_delay_us(1);
 	}
 }
+void SW_CLK_SET()
+{
+	PORTB |= (1<<PB3);
+}
+void SW_CLK_CLR()
+{
+	PORTB &= ~(1<<PB3);
+}
 void SWDIO_SET()
 {
 	PORTB |= (1<<PB4);
 }
-void SWDIO_RESET()
+void SWDIO_CLR()
 {
 	PORTB &= ~(1<<PB4);
 }
@@ -54,7 +63,7 @@ void SW_WRITE_BIT(uint8_t bit)
 {
 	SWDIO_SET_OUT();
 	if(bit) SWDIO_SET();
-	else SWDIO_RESET();
+	else SWDIO_CLR();
 	SW_CLK(1);
 }
 uint8_t SW_READ_BIT()
@@ -73,24 +82,6 @@ void SW_TURNAROUND()
 uint8_t SW_REQUEST(uint8_t request)
 {
 	uint8_t bit;
-//	uint8_t parity = 0;
-
-//	SW_WRITE_BIT(1);		// Start Bit
-//	bit = (request >> 0) & 1;
-//	SW_WRITE_BIT(bit);		// APnDP Bit
-//	parity += bit;
-//	bit = (request >> 1) & 1;		// RnW Bit
-//	SW_WRITE_BIT(bit);
-//	parity += bit;
-//	bit = (request >> 2) & 1;
-//	SW_WRITE_BIT(bit);		//A2 Bit
-//	parity += bit;
-//	bit = (request >> 3) & 1;
-//	SW_WRITE_BIT(bit);		//A3 Bit
-//	parity += bit;
-//	SW_WRITE_BIT(parity);	// Parity Bit
-//	SW_WRITE_BIT(0);		// Stop Bit
-//	SW_WRITE_BIT(1);		// Park Bit
 
 	for(uint8_t i = 0; i<8; i++)
 	{
@@ -149,7 +140,6 @@ int main()
 //	Initialize System
 /*----------------------------------------------------------------------------*/
 	gpio_init();
-	USART_Init();
 /*----------------------------------------------------------------------------*/
 //	LINE RESET
 /*----------------------------------------------------------------------------*/
@@ -158,22 +148,10 @@ int main()
 //	Request Acces DP Read IDCODE
 /*----------------------------------------------------------------------------*/
 	_ack = SW_REQUEST(REQ_ID_CODE);
-//	SW_WRITE_BIT(1);
-//	SW_WRITE_BIT(0);
-//	SW_WRITE_BIT(1);
-//	SW_WRITE_BIT(0);
-//	SW_WRITE_BIT(0);
-//	SW_WRITE_BIT(1);
-//	SW_WRITE_BIT(0);
-//	SW_WRITE_BIT(1);
-//
-//	DDRB &= ~(1<<PB4);		// Set Input
-//	PORTB &= ~(1<<PB4);		// Set Logic 0
 	SW_CLK(35);
 /*----------------------------------------------------------------------------*/
 //	SWD_IO pin tristate and Turnaround
 /*----------------------------------------------------------------------------*/
-	USART_SendByte(_ack);
 	if (_ack == ACK_OK) PORTB |= (1<<PB5);
 	else PORTB &= ~(1<<PB5);
 
