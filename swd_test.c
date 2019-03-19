@@ -70,7 +70,7 @@ uint8_t SW_READ_BIT()
 {
 	uint8_t bit = 0;
 	SWDIO_SET_IN();
-	bit = PINB & (1<<PB4);
+	bit = (PINB & (1<<PB4)) >> PB4;
 	SW_CLK(1);
 	return bit;
 }
@@ -122,20 +122,23 @@ uint32_t SW_READ_DATA()
 {
 	uint32_t data = 0;
 	uint8_t bit = 0;
+	uint8_t parity = 0;
 	SWDIO_SET_IN();
 
-	for(uint8_t i = 0; i<=32; i++)
+	for(uint8_t i = 0; i<32; i++)
 	{
 		bit = SW_READ_BIT();
-		data = bit << i;
+		data += bit << i;
 	}
-
+	parity = SW_READ_BIT();
+	if(parity == 1) parity = 0;
 	return data;
 }
 
 int main()
 {
 	uint8_t _ack = 0;
+	uint32_t data = 0;
 /*----------------------------------------------------------------------------*/
 //	Initialize System
 /*----------------------------------------------------------------------------*/
@@ -148,12 +151,14 @@ int main()
 //	Request Acces DP Read IDCODE
 /*----------------------------------------------------------------------------*/
 	_ack = SW_REQUEST(REQ_ID_CODE);
-	SW_CLK(35);
+	data = SW_READ_DATA();
+	//SW_CLK(35);
 /*----------------------------------------------------------------------------*/
 //	SWD_IO pin tristate and Turnaround
 /*----------------------------------------------------------------------------*/
 	if (_ack == ACK_OK) PORTB |= (1<<PB5);
 	else PORTB &= ~(1<<PB5);
-
+	if(data == 196154487) PORTB &= ~(1<<PB5);
+	else PORTB |= (1<<PB5);
 	return 0;
 }
